@@ -1,10 +1,11 @@
-name: Build Executables
+name: Build Executables (Go)
 
 on:
   push:
     branches:
-      - develop
       - main
+      - develop
+      - feat/*
     tags:
       - 'v*'
   pull_request:
@@ -15,55 +16,60 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            ext: ""
+            shell: bash
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            ext: .exe
+            shell: powershell
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            ext: ""
+            shell: bash
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          node-version: '18'
-          cache: 'npm'
+          go-version: '1.21'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Build
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p bin
+          go build -ldflags="-s -w" -o bin/blip-list-generator-${{ matrix.goos }}${{ matrix.ext }} ./cmd/blip-list-generator
 
-      - name: Build TypeScript
-        run: npm run build
+      - name: Show build info (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          ls -lh bin/
+          file bin/blip-list-generator-${{ matrix.goos }}${{ matrix.ext }} || true
 
-      - name: Create bin directory
-        run: mkdir -p bin
+      - name: Show build info (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Get-ChildItem -Path bin\
 
-      - name: Package for Windows
-        run: npx pkg dist/index.js --targets node18-win-x64 --output bin/blip-list-generator-win.exe
-
-      - name: Package for Linux
-        run: npx pkg dist/index.js --targets node18-linux-x64 --output bin/blip-list-generator-linux
-
-      - name: Package for macOS
-        run: npx pkg dist/index.js --targets node18-macos-x64 --output bin/blip-list-generator-macos
-
-      - name: List binaries
-        run: ls -la bin/
-
-      - name: Upload Windows artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: blip-list-generator-windows
-          path: bin/blip-list-generator-win.exe
-
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: blip-list-generator-linux
-          path: bin/blip-list-generator-linux
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: blip-list-generator-macos
-          path: bin/blip-list-generator-macos
+          name: blip-list-generator-${{ matrix.goos }}${{ matrix.ext }}
+          path: bin/blip-list-generator-${{ matrix.goos }}${{ matrix.ext }}
 
   release:
     needs: build
@@ -75,16 +81,12 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
-      - name: List downloaded artifacts
-        run: ls -la */
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            blip-list-generator-windows/blip-list-generator-win.exe
             blip-list-generator-linux/blip-list-generator-linux
-            blip-list-generator-macos/blip-list-generator-macos
-          generate_release_notes: true
+            blip-list-generator-windows.exe/blip-list-generator-windows.exe
+            blip-list-generator-darwin/blip-list-generator-darwin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

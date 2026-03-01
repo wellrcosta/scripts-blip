@@ -7,117 +7,120 @@ CLI para gerar automaticamente dois arquivos `.js` para uso na plataforma **Blip
 
 ---
 
+## 🚀 Tecnologia
+
+**Go 1.21+** — compiled to native executables for Windows, Linux, and macOS
+
+---
+
 ## 📦 Instalação
 
+### Prerequisites
+
+- [Go 1.21+](https://go.dev/dl/)
+
+### Clone and Build
+
 ```bash
-# Clone o repositório
+# Clone the repository
 git clone https://github.com/wellrcosta/scripts-blip.git
 cd scripts-blip
 
-# Instale as dependências
-npm install
+# Install dependencies and build
+go mod tidy
+go build -o bin/blip-list-generator ./cmd/blip-list-generator
+
+# Run
+./bin/blip-list-generator
 ```
 
 ---
 
-## 🚀 Uso
+## 📋 Uso
 
-### Modo de Desenvolvimento (com TypeScript)
-
-```bash
-npm run dev
-# ou
-npx ts-node src/index.ts
-```
-
-### Modo Produção (com JavaScript compilado)
+Execute o CLI e siga as perguntas interativas:
 
 ```bash
-# Compila TypeScript para JavaScript
-npm run build
-
-# Executa
-node dist/index.js
+./bin/blip-list-generator
 ```
 
----
-
-## 📋 Fluxo do CLI
-
-Ao executar, o CLI fará as seguintes perguntas:
+### Fluxo
 
 1. **Texto do corpo** — Padrão: `*Clique no botão* e *selecione* sobre qual assunto você deseja falar 👇`
-2. **Quantidade de opções** — Limite: 1 a 12 (WhatsApp suporta até 10, usamos margem de 12)
+2. **Quantidade de opções** — Limite: 1 a 12 (WhatsApp suporta até 10)
 3. **Texto do botão do menu** — Padrão: `Opções`
 4. **Título da seção** — Padrão: `Escolha uma opção`
 5. **Para cada opção:**
-   - Texto do botão (máx: 22 caracteres — limite WhatsApp)
-   - Descrição (máx: 40 caracteres — limite WhatsApp, ENTER para vazio)
+   - Título (máx 22 caracteres — limite WhatsApp)
+   - Descrição (máx 40 caracteres — limite WhatsApp, ENTER para vazio)
 
-Os arquivos serão salvos em `./scripts/lista/` com timestamp no nome.
-
----
-
-## 📁 Saída Gerada
-
-Os arquivos são salvos em `./scripts/lista/`:
-
-```
-scripts/lista/
-├── lista-2024-01-15T10-30-45-123Z.js
-└── lista-regex-2024-01-15T10-30-45-123Z.js
-```
+Arquivos são salvos em `./scripts/lista/` com timestamp ISO no nome.
 
 ---
 
-## 🔧 Build de Executáveis
-
-Use o `pkg` para gerar executáveis multiplataforma:
+## 🛠️ Desenvolvimento
 
 ```bash
-# Build único para todas as plataformas
-npm run package
+# Run in development mode
+go run ./cmd/blip-list-generator
 
-# Build individual
-npm run package:win      # Windows x64
-npm run package:linux    # Linux x64
-npm run package:macos    # macOS x64
+# Run tests
+go test ./...
+
+# Build for current platform
+go build -o bin/blip-list-generator ./cmd/blip-list-generator
 ```
 
-Os binários serão gerados na pasta `./bin/`.
+---
+
+## 📦 Build Multiplataforma
+
+### Manual
+
+```bash
+# Linux (AMD64)
+GOOS=linux GOARCH=amd64 go build -o bin/blip-list-generator-linux ./cmd/blip-list-generator
+
+# Windows (AMD64)
+GOOS=windows GOARCH=amd64 go build -o bin/blip-list-generator.exe ./cmd/blip-list-generator
+
+# macOS (AMD64)
+GOOS=darwin GOARCH=amd64 go build -o bin/blip-list-generator-macos ./cmd/blip-list-generator
+```
+
+### GitHub Actions
+
+Builds automáticos para todas as plataformas são executados em push para `main` ou `develop`.
+
+**Artefatos:** Disponíveis na aba Actions → Build Executables
 
 ---
 
-## 📤 Build via GitHub Actions
+## 📁 Estrutura do Projeto
 
-O projeto inclui workflow para build automático multiplataforma:
-
-1. Push para a branch `develop` ou crie uma tag
-2. O GitHub Actions compilará automaticamente para:
-   - Windows x64 (`.exe`)
-   - Linux x64
-   - macOS x64
-3. Os binários estarão disponíveis como **Artifacts** no workflow
-
----
-
-## 📝 Scripts npm
-
-| Comando | Descrição |
-|---------|-----------|
-| `npm run dev` | Roda em modo desenvolvimento (ts-node) |
-| `npm run build` | Compila TypeScript para `./dist` |
-| `npm run clean` | Remove a pasta `./dist` |
-| `npm run package` | Gera executáveis para todas as plataformas |
-| `npm run package:win` | Gera executável Windows (.exe) |
-| `npm run package:linux` | Gera executável Linux |
-| `npm run package:macos` | Gera executável macOS |
+```
+src/
+├── cmd/
+│   └── blip-list-generator/
+│       └── main.go          # CLI entry point
+├── internal/
+│   ├── generator/
+│   │   ├── lista.go         # Generator for lista-*.js
+│   │   └── regex.go         # Regex pattern generation
+│   ├── validator/
+│   │   └── validator.go     # Input validation
+│   └── utils/
+│       └── utils.go         # Utility functions
+├── go.mod
+├── go.sum
+└── README.md
+```
 
 ---
 
 ## 📄 Exemplo de Saída
 
-### lista-2024-01-15T10-30-45-123Z.js
+### lista-2024-01-15_10-30-45-123Z.js
 
 ```javascript
 function run(source) {
@@ -158,14 +161,14 @@ function run(source) {
 }
 ```
 
-### lista-regex-2024-01-15T10-30-45-123Z.js
+### lista-regex-2024-01-15_10-30-45-123Z.js
 
 ```javascript
 function run(input) {
     try {
         const optionsRegex = {
             "(^1$|Baixa\\s+[Gg][Rr][Aa][Vv][Aa][Mm][Ee]).*": "Baixa de Gravame",
-            "(^2$|Renegocia[cç][ãa][Oo]).*": "Renegociação"
+            "(^2$|[Rr][Ee][Nn][Ee][Gg][Oo][Cc][Ii][Aa][Cc][Aa@@][Oo]).*": "Renegociação"
         };
         let data = null;
         for (let key in optionsRegex) {
@@ -187,28 +190,15 @@ function run(input) {
 
 ---
 
-## ⚙️ Estrutura do Projeto
-
-```
-src/
-├── index.ts              # CLI principal
-├── lib/
-│   ├── escape.ts        # Funções de escape para JS/JSON
-│   ├── validation.ts    # Validações de input
-│   └── regex-generator.ts # Gerador de patterns regex com acentos
-```
-
----
-
 ## 🛡️ Tolerância a Acentos
 
 O regex gerado automaticamente aceita variações com/sem acento:
 
-| Input aceito | Match para |
-|-------------|------------|
-| `1` ou `Baixa de Gravame` | Baixa de Gravame |
+| Input | Match para |
+|-------|------------|
+| `1`, `Baixa de Gravame` | Baixa de Gravame |
 | `baixa de gravame` | Baixa de Gravame |
-| `Baixa gravame` | Baixa de Gravame (espaço é opcional) |
+| `baixa gravame` | Baixa de Gravame (espaços opcionais) |
 
 ---
 

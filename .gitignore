@@ -1,12 +1,15 @@
-# Dependencies
-node_modules/
-yarn.lock
-
-# Build output
-dist/
-
 # Binaries
 bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of go coverage tool
+*.out
 
 # Generated scripts
 scripts/
@@ -16,6 +19,7 @@ scripts/
 .vscode/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
@@ -23,4 +27,6 @@ Thumbs.db
 
 # Logs
 *.log
-npm-debug.log*
+
+# Dependency directories (remove if vendoring)
+vendor/
