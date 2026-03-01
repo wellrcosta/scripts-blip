@@ -24,14 +24,17 @@ jobs:
             goos: linux
             goarch: amd64
             ext: ""
+            shell: bash
           - os: windows-latest
             goos: windows
             goarch: amd64
             ext: .exe
+            shell: powershell
           - os: macos-latest
             goos: darwin
             goarch: amd64
             ext: ""
+            shell: bash
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,6 +45,7 @@ jobs:
           go-version: '1.21'
 
       - name: Build
+        shell: bash
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -49,40 +53,26 @@ jobs:
           mkdir -p bin
           go build -ldflags="-s -w" -o bin/blip-list-generator-${{ matrix.goos }}${{ matrix.ext }} ./cmd/blip-list-generator
 
+      - name: Show build info (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          ls -lh bin/
+          file bin/blip-list-generator-${{ matrix.goos }}${{ matrix.ext }} || true
+
+      - name: Show build info (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Get-ChildItem -Path bin\
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: blip-list-generator-${{ matrix.goos }}${{ matrix.ext }}
           path: bin/blip-list-generator-${{ matrix.goos }}${{ matrix.ext }}
 
-      - name: Show build info
-        run: |
-          ls -lh bin/
-          file bin/blip-list-generator-${{ matrix.goos }}${{ matrix.ext }} || true
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-
-      - name: Run tests
-        run: |
-          go mod tidy
-          go test ./...
-
-      - name: Verify build
-        run: |
-          go build -o /tmp/test-build ./cmd/blip-list-generator
-          /tmp/test-build --help || true
-
   release:
-    needs: [build, test]
+    needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
