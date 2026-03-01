@@ -17,7 +17,7 @@ func GenerateListaFile(textoCorpo, botaoMenu, tituloSecao string, opcoes []Optio
 	textoEscapado := utils.EscapeTemplateLiteral(textoCorpo)
 	botaoEsc := utils.EscapeJSONString(botaoMenu)
 	secaoEsc := utils.EscapeJSONString(tituloSecao)
-	
+
 	var rows []string
 	for _, op := range opcoes {
 		row := `                        {
@@ -27,13 +27,13 @@ func GenerateListaFile(textoCorpo, botaoMenu, tituloSecao string, opcoes []Optio
                         }`
 		rows = append(rows, row)
 	}
-	
+
 	var options []string
 	for _, op := range opcoes {
 		opt := `            { "text": "` + utils.EscapeJSONString(op.Title) + `" }`
 		options = append(options, opt)
 	}
-	
+
 	return `function run(source) {
     try {
         let template;
@@ -80,16 +80,17 @@ func GenerateRegexFile(opcoes []Option) string {
 		entry := `        "` + pattern + `": "` + utils.EscapeJSONString(op.Title) + `"`
 		entries = append(entries, entry)
 	}
-	
+
 	return `function run(input) {
     try {
         const optionsRegex = {
 ` + strings.Join(entries, ",\n") + `
         };
         let data = null;
+        const inputLower = input.toString().toLowerCase();
         for (let key in optionsRegex) {
             const matching = new RegExp(key, "i");
-            if (matching.test(input)) {
+            if (matching.test(inputLower)) {
                 data = optionsRegex[key];
                 return data;
             }

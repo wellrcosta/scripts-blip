@@ -6,32 +6,33 @@ import (
 )
 
 var accentMap = map[string]string{
-	"a": "[aáàâãäAÁÀÂÃÄ]", "A": "[aáàâãäAÁÀÂÃÄ]",
-	"e": "[eéèêëEÉÈÊË]", "E": "[eéèêëEÉÈÊË]",
-	"i": "[iíìîïIÍÌÎÏ]", "I": "[iíìîïIÍÌÎÏ]",
-	"o": "[oóòôõöOÓÒÔÕÖ]", "O": "[oóòôõöOÓÒÔÕÖ]",
-	"u": "[uúùûüUÚÙÛÜ]", "U": "[uúùûüUÚÙÛÜ]",
-	"c": "[cçCÇ]", "C": "[cçCÇ]",
-	"n": "[nñNÑ]", "N": "[nñNÑ]",
+	"a": "[aáàâãä]",
+	"e": "[eéèêë]",
+	"i": "[iíìîï]",
+	"o": "[oóòôõö]",
+	"u": "[uúùûü]",
+	"c": "[cç]",
+	"n": "[nñ]",
 }
 
 func charToRegex(char string) string {
+	// Space becomes just a space (not \s+)
 	if char == " " {
-		return `\s+`
+		return " "
 	}
-	if mapped, ok := accentMap[char]; ok {
+	// Check if lowercase version has accent mapping
+	lower := strings.ToLower(char)
+	if mapped, ok := accentMap[lower]; ok {
 		return mapped
 	}
+	// Special regex characters
 	specialChars := `.*+?^${}()|[\]`
 	if strings.Contains(specialChars, char) {
 		return `\` + char
 	}
-	lower := strings.ToLower(char)
-	upper := strings.ToUpper(char)
-	if lower != upper {
-		return `[` + lower + upper + `]`
-	}
-	return char
+	// Regular char - use case insensitive via lowercase only
+	// Since we'll use toLowerCase() on input, we only need lowercase
+	return strings.ToLower(char)
 }
 
 func GeneratePatternRegex(numeroOpcao int, titulo string) string {
