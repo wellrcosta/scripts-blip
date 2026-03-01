@@ -1,0 +1,77 @@
+name: Build Executables
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Package for Windows
+        run: npm run package:win
+
+      - name: Package for Linux
+        run: npm run package:linux
+
+      - name: Package for macOS
+        run: npm run package:macos
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blip-list-generator-windows
+          path: bin/blip-list-generator-win.exe
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blip-list-generator-linux
+          path: bin/blip-list-generator-linux
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blip-list-generator-macos
+          path: bin/blip-list-generator-macos
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            blip-list-generator-windows/blip-list-generator-win.exe
+            blip-list-generator-linux/blip-list-generator-linux
+            blip-list-generator-macos/blip-list-generator-macos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
